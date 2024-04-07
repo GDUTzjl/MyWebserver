@@ -1,11 +1,13 @@
 <!--
  * @Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
  * @Date: 2024-04-07 18:52:18
- * @LastEditors: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
- * @LastEditTime: 2024-04-07 19:02:37
+ * @LastEditors: zjl 3106825030@qq.com
+ * @LastEditTime: 2024-04-07 22:42:03
  * @FilePath: /MyWebServer/lock/README.md
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
+
+可以完全独立写，不用管别的类
 
 线程同步机制包装类
 ===============
