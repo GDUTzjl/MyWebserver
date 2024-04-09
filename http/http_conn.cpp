@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-08 16:53:07
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-09 16:34:29
+ * @LastEditTime: 2024-04-09 23:25:29
  * @FilePath: /MyWebServer/http/http_conn.cpp
  * @Description:
  */
@@ -94,7 +94,7 @@ void http_conn::initmysql_result(connection_pool *connPool)
     // 在user表中检索username，passwd数据，浏览器端输入
     if (mysql_query(mysql, "SELECT username,passwd FROM user"))
     {
-        // LOG_ERROR("SELECT error:%s\n", mysql_error(mysql));
+        LOG_ERROR("SELECT error:%s\n", mysql_error(mysql));
     }
 
     // 从表中检索完整的结果集
@@ -557,7 +557,7 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text)
     }
     else
     {
-        // LOG_INFO("oop!unknow header: %s", text);
+        LOG_INFO("oop!unknow header: %s", text);
     }
     return NO_REQUEST;
 }

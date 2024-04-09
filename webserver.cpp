@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-09 16:39:59
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-09 21:25:46
+ * @LastEditTime: 2024-04-09 23:30:26
  * @FilePath: /MyWebServer/webserver.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -40,8 +40,7 @@ WebServer::~WebServer()
     delete m_pool;
 }
 
-void WebServer::init(int port, string user, string passWord, string databaseName, int log_write,
-                     int opt_linger, int trigmode, int sql_num, int thread_num, int close_log, int actor_model)
+void WebServer::init(int port, string user, string passWord, string databaseName, int log_write, int opt_linger, int trigmode, int sql_num, int thread_num, int close_log, int actor_model)
 {
     m_port = port;
     m_user = user;
@@ -224,7 +223,7 @@ void WebServer::eventLoop()
         // 忽略这种错误，让epoll报错误号为4时，再次做一次epoll_wait ????
         if (number < 0 && errno != EINTR)
         {
-            // LOG_ERROR("%s", "epoll failure");
+            LOG_ERROR("%s", "epoll failure");
             break;
         }
         // 对所有就绪事件进行处理
@@ -256,8 +255,7 @@ void WebServer::eventLoop()
                 // 接收到SIGALRM信号，timeout设置为True
                 bool flag = dealwithsignal(timeout, stop_server);
                 if (false == flag)
-                    // LOG_ERROR("%s", "dealclientdata failure");
-                    ;
+                    LOG_ERROR("%s", "dealclientdata failure");
             }
             // 处理客户连接上接收到的数据
             /* 当这一sockfd上有可读事件时，epoll_wait通知主线程。*/
@@ -279,7 +277,7 @@ void WebServer::eventLoop()
         {
             utils.timer_handler();
 
-            // LOG_INFO("%s", "timer tick");
+            LOG_INFO("%s", "timer tick");
 
             timeout = false;
         }
@@ -300,14 +298,14 @@ bool WebServer::dealclientdata()
         int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
         if (connfd < 0)
         {
-            // LOG_ERROR("%s:errno is:%d", "accept error", errno);
+            LOG_ERROR("%s:errno is:%d", "accept error", errno);
             return false;
         }
         // ???用户太多
         if (http_conn::m_user_count >= MAX_FD)
         {
             utils.show_error(connfd, "Internal server busy");
-            // LOG_ERROR("%s", "Internal server busy");
+            LOG_ERROR("%s", "Internal server busy");
             return false;
         }
         // /* 并将connfd注册到内核事件表中 */
@@ -323,13 +321,13 @@ bool WebServer::dealclientdata()
             int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
             if (connfd < 0)
             {
-                // LOG_ERROR("%s:errno is:%d", "accept error", errno);
+                LOG_ERROR("%s:errno is:%d", "accept error", errno);
                 break;
             }
             if (http_conn::m_user_count >= MAX_FD)
             {
                 utils.show_error(connfd, "Internal server busy");
-                // LOG_ERROR("%s", "Internal server busy");
+                LOG_ERROR("%s", "Internal server busy");
                 break;
             }
             // /* 并将connfd注册到内核事件表中 */
@@ -377,7 +375,7 @@ void WebServer::deal_timer(util_timer *timer, int sockfd)
         utils.m_timer_lst.del_timer(timer);
     }
 
-    // LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
+    LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
 }
 
 // 当我们在读端pipefd[0]读到这个信号的的时候，就会将timeout变量置为true并跳出循环，让timer_handler()函数取出来定时器容器上的到期任务，该定时器容器是通过升序链表来实现的，从头到尾对检查任务是否超时，若超时则调用定时器的回调函数cb_func()，关闭该socket连接，并删除其对应的定时器del_timer
@@ -464,7 +462,7 @@ void WebServer::dealwithread(int sockfd)
         // 读入对应缓冲区
         if (users[sockfd].read_once())
         {
-            // LOG_INFO("deal with the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
+            LOG_INFO("deal with the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
 
             // 若监测到读事件，将该事件放入请求队列
             m_pool->append_p(users + sockfd);
@@ -490,7 +488,7 @@ void WebServer::adjust_timer(util_timer *timer)
     timer->expire = cur + 3 * TIMESLOT;
     utils.m_timer_lst.adjust_timer(timer);
 
-    // LOG_INFO("%s", "adjust timer once");
+    LOG_INFO("%s", "adjust timer once");
 }
 
 void WebServer::dealwithwrite(int sockfd)
@@ -525,7 +523,7 @@ void WebServer::dealwithwrite(int sockfd)
         // proactor
         if (users[sockfd].write())
         {
-            // LOG_INFO("send data to the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
+            LOG_INFO("send data to the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
             // 若有数据传输，则将定时器往后延迟3个单位
             // 并对新的定时器在链表上的位置进行调整
             if (timer)
@@ -538,5 +536,16 @@ void WebServer::dealwithwrite(int sockfd)
             // 服务器端关闭连接，移除对应的定时器
             deal_timer(timer, sockfd);
         }
+    }
+}
+void WebServer::log_write()
+{
+    if (0 == m_close_log)
+    {
+        // 初始化日志  同步、异步
+        if (1 == m_log_write)
+            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
+        else
+            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
     }
 }

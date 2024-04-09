@@ -2,18 +2,27 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-09 16:40:11
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-09 21:44:59
+ * @LastEditTime: 2024-04-09 23:34:31
  * @FilePath: /MyWebServer/webserver.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <unistd.h> //for getcwd
 #include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <cassert>
+#include <sys/epoll.h>
 #include "./threadpool/threadpool.h"
 #include "./http/http_conn.h"
 #include "./timer/lst_timer.h"
-// #include "../log/log.h"
+#include "./log/log.h"
 
 const int MAX_FD = 65536;           // 最大文件描述符
 const int MAX_EVENT_NUMBER = 10000; // 最大事件数
@@ -31,7 +40,7 @@ public:
 
     void thread_pool();
     void sql_pool();
-    // void log_write();
+    void log_write();
     void trig_mode();
     void eventListen();
     void eventLoop();

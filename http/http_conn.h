@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-08 16:02:49
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-09 16:31:01
+ * @LastEditTime: 2024-04-09 23:33:32
  * @FilePath: /MyWebServer/http/http_conn.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -27,6 +27,8 @@
 
 #include "../lock/locker.h"
 #include "../CGImysql/sql_connection_pool.h"
+#include "../timer/lst_timer.h"
+#include "../log/log.h"
 // 等待补充
 
 class http_conn
