@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-07 22:03:43
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-07 22:34:25
+ * @LastEditTime: 2024-04-09 19:57:29
  * @FilePath: /MyWebServer/CGImysql/sql_connection_pool.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -33,9 +33,9 @@ public:
     // 局部静态变量单例模式
     static connection_pool *GetInstance();
 
-    // void init(string url, string User, string PassWord, string DataBaseName, int Port, int MaxConn, int close_log);
+    void init(string url, string User, string PassWord, string DataBaseName, int Port, int MaxConn, int close_log);
 
-    void init(string url, string User, string PassWord, string DataBaseName, int Port, int MaxConn);
+    // void init(string url, string User, string PassWord, string DataBaseName, int Port, int MaxConn);
 
 private:
     connection_pool();
