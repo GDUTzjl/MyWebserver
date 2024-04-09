@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-09 16:43:38
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-09 16:48:27
+ * @LastEditTime: 2024-04-09 16:53:04
  * @FilePath: /MyWebServer/config.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -12,6 +12,7 @@
 #include "webserver.h"
 #include <getopt.h>
 #include <stdlib.h>
+#include <string>
 
 using namespace std;
 
