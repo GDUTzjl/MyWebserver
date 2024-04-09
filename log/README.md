@@ -1,3 +1,11 @@
+<!--
+ * @Author: zjl 3106825030@qq.com
+ * @Date: 2024-04-09 23:19:42
+ * @LastEditors: zjl 3106825030@qq.com
+ * @LastEditTime: 2024-04-09 23:20:49
+ * @FilePath: /MyWebServer/log/README.md
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
 
 同步/异步日志系统
 ===============
@@ -20,3 +28,5 @@
 异步
     判断是否分文件
     格式化输出内容，将内容写入阻塞队列，创建一个写线程，从阻塞队列取出内容写入日志文件
+
+    111111111111111
