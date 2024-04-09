@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-07 22:03:43
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-09 22:03:07
+ * @LastEditTime: 2024-04-09 23:52:22
  * @FilePath: /MyWebServer/CGImysql/sql_connection_pool.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -54,7 +54,7 @@ public:
     string m_User;         // 登陆数据库用户名
     string m_PassWord;     // 登陆数据库密码
     string m_DatabaseName; // 使用数据库名
-    // int m_close_log;	   // 日志开关
+    int m_close_log;       // 日志开关
 };
 
 class connectionRAII
