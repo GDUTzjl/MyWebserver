@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-08 16:02:49
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-08 20:57:04
+ * @LastEditTime: 2024-04-09 16:31:01
  * @FilePath: /MyWebServer/http/http_conn.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -12,12 +12,14 @@
 
 #include <netinet/in.h> //sockaddr_in
 #include <sys/stat.h>   //stat 文件状态函数
+#include <sys/types.h>
 #include <map>
+#include <sys/mman.h> //for mmap
 #include <string.h>
 #include <mysql/mysql.h> //formysql
 #include <sys/epoll.h>   // for epoll_event
 #include <fcntl.h>       //for fcntl 设置文件描述符
-
+#include <string>
 #include <unistd.h> //for close()
 
 // 等待补充
@@ -136,7 +138,7 @@ private:
     // 从状态机读取一行，分析是请求报文的哪一部分
     LINE_STATUS parse_line();
 
-    // ？？？？
+    // 释放文件缓存区
     void unmap();
 
     // 根据响应报文格式，生成对应8个部分，以下函数均由do_request调用
