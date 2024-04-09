@@ -38,5 +38,12 @@
         "typeinfo": "cpp",
         "map": "cpp",
         "cassert": "cpp"
-    }
+    },
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/curry/zjl/projects/MyWebServer",
+            "binaryPath": "/home/curry/zjl/projects/MyWebServer/server",
+            "binaryArgs": []
+        }
+    ]
 }

@@ -21,6 +21,7 @@
 #include <fcntl.h>       //for fcntl 设置文件描述符
 #include <string>
 #include <unistd.h> //for close()
+#include <errno.h>  //for
 
 // 等待补充
 

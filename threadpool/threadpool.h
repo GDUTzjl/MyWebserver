@@ -2,7 +2,7 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-07 21:07:53
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-08 15:54:12
+ * @LastEditTime: 2024-04-09 21:48:51
  * @FilePath: /MyWebServer/threadpool/threadpool.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -48,7 +48,7 @@ public:
 };
 // 注意写法
 template <typename T>
-threadpool<T>::threadpool(int actor_model, connection_pool *connPool, int thread_number = 8, int max_request = 10000) : m_actor_model(actor_model), m_thread_number(thread_number), m_max_requests(max_requests), m_threads(NULL), m_connPool(connPool)
+threadpool<T>::threadpool(int actor_model, connection_pool *connPool, int thread_number, int max_requests) : m_actor_model(actor_model), m_thread_number(thread_number), m_max_requests(max_requests), m_threads(NULL), m_connPool(connPool)
 {
     if (thread_number <= 0 || max_requests <= 0)
         throw std::exception();

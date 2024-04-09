@@ -2,13 +2,14 @@
  * @Author: zjl 3106825030@qq.com
  * @Date: 2024-04-09 16:40:11
  * @LastEditors: zjl 3106825030@qq.com
- * @LastEditTime: 2024-04-09 21:07:33
+ * @LastEditTime: 2024-04-09 21:44:59
  * @FilePath: /MyWebServer/webserver.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
+#include <errno.h>
 #include "./threadpool/threadpool.h"
 #include "./http/http_conn.h"
 #include "./timer/lst_timer.h"
