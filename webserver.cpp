@@ -1,3 +1,11 @@
+/*
+ * @Author: zjl 3106825030@qq.com
+ * @Date: 2024-04-09 16:39:59
+ * @LastEditors: zjl 3106825030@qq.com
+ * @LastEditTime: 2024-04-09 23:30:26
+ * @FilePath: /MyWebServer/webserver.cpp
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #include "webserver.h"
 
 WebServer::WebServer()
@@ -32,8 +40,7 @@ WebServer::~WebServer()
     delete m_pool;
 }
 
-void WebServer::init(int port, string user, string passWord, string databaseName, int log_write,
-                     int opt_linger, int trigmode, int sql_num, int thread_num, int close_log, int actor_model)
+void WebServer::init(int port, string user, string passWord, string databaseName, int log_write, int opt_linger, int trigmode, int sql_num, int thread_num, int close_log, int actor_model)
 {
     m_port = port;
     m_user = user;
@@ -46,6 +53,22 @@ void WebServer::init(int port, string user, string passWord, string databaseName
     m_TRIGMode = trigmode;
     m_close_log = close_log;
     m_actormodel = actor_model;
+}
+
+void WebServer::sql_pool()
+{
+    // 初始化数据库连接池
+    m_connPool = connection_pool::GetInstance();
+    m_connPool->init("localhost", m_user, m_passWord, m_databaseName, 3306, m_sql_num, m_close_log);
+
+    // 初始化数据库读取表
+    users->initmysql_result(m_connPool);
+}
+
+void WebServer::thread_pool()
+{
+    // 线程池
+    m_pool = new threadpool<http_conn>(m_actormodel, m_connPool, m_thread_num);
 }
 
 void WebServer::trig_mode()
@@ -76,34 +99,6 @@ void WebServer::trig_mode()
     }
 }
 
-void WebServer::log_write()
-{
-    if (0 == m_close_log)
-    {
-        // 初始化日志  同步、异步
-        if (1 == m_log_write)
-            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
-        else
-            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
-    }
-}
-
-void WebServer::sql_pool()
-{
-    // 初始化数据库连接池
-    m_connPool = connection_pool::GetInstance();
-    m_connPool->init("localhost", m_user, m_passWord, m_databaseName, 3306, m_sql_num, m_close_log);
-
-    // 初始化数据库读取表
-    users->initmysql_result(m_connPool);
-}
-
-void WebServer::thread_pool()
-{
-    // 线程池
-    m_pool = new threadpool<http_conn>(m_actormodel, m_connPool, m_thread_num);
-}
-
 void WebServer::eventListen()
 {
     // 网络编程基础步骤
@@ -113,17 +108,18 @@ void WebServer::eventListen()
 
     // 优雅关闭连接
     // struct linger 用法  https://blog.csdn.net/teethfairy/article/details/10917145
+
     if (0 == m_OPT_LINGER)
     {
         struct linger tmp = {0, 1};
         setsockopt(m_listenfd, SOL_SOCKET, SO_LINGER, &tmp, sizeof(tmp));
     }
+
     else if (1 == m_OPT_LINGER)
     {
         struct linger tmp = {1, 1};
         setsockopt(m_listenfd, SOL_SOCKET, SO_LINGER, &tmp, sizeof(tmp));
     }
-
     int ret = 0;
     /* 创建监听socket的TCP/IP的IPV4 socket地址 */
     struct sockaddr_in address;
@@ -132,7 +128,7 @@ void WebServer::eventListen()
     address.sin_addr.s_addr = htonl(INADDR_ANY); /* INADDR_ANY：将套接字绑定到所有可用的接口IP */
     address.sin_port = htons(m_port);
 
-    int flag = 1;
+    int flag = 1; // ?????
     /* SO_REUSEADDR 允许端口被重复使用 */
     // 服务器重新启动，设置端口复用
     setsockopt(m_listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
@@ -141,6 +137,7 @@ void WebServer::eventListen()
     assert(ret >= 0);
     /* 创建监听队列以存放待处理的客户连接，在这些客户连接被accept()之前 */
     ret = listen(m_listenfd, 5);
+
     assert(ret >= 0);
 
     // 设置最小超时单位
@@ -160,33 +157,28 @@ void WebServer::eventListen()
     /* 用于存储epoll事件表中就绪事件的event数组 */
     // 创建内核事件表
     epoll_event events[MAX_EVENT_NUMBER];
-    // 创建一个指示epoll内核事件表的文件描述符
+    /* 创建一个额外的文件描述符来唯一标识内核中的epoll事件表 */
     // 该描述符将用作其他epoll系统调用的第一个参数
     // size不起作用。
-    /* 创建一个额外的文件描述符来唯一标识内核中的epoll事件表 */
     m_epollfd = epoll_create(5);
     assert(m_epollfd != -1);
 
-    //??????
     // 将内核事件表注册读事件，ET模式，选择开启EPOLLONESHOT,上树，设置非阻塞
     /* 将fd上的EPOLLIN和EPOLLET事件注册到epollfd指示的epoll内核事件中 */
     /* 主线程往epoll内核事件表中注册监听socket事件，当listen到新的客户连接时，listenfd变为就绪事件 */
-    // 将listenfd放在epoll树上
+    // 将listenfd放在epoll树上 利用工具类上树
     utils.addfd(m_epollfd, m_listenfd, false, m_LISTENTrigmode); // 不用oneshot
 
-    // 下面干什么不知道？？？？？
-    // 将上述epollfd赋值给http类对象的m_epollfd属性
+    // 将上述epollfd赋值给http类对象的m_epollfd属性 静态变量方便操作，唯一标识
     http_conn::m_epollfd = m_epollfd;
 
-    //?????
     // socketpair的用法和理解
     // https://blog.csdn.net/weixin_40039738/article/details/81095013
     // sock_stream 是有保障的(即能保证数据正确传送到对方)面向连接的SOCKET，多用于资料(如文件)传送。
     // PF_UNIX 本地进程间通信——Unix域套接字
     ///* 创建管道，注册pipefd[0]上的可读事件 */
-    // 创建管道套接字
+    // 创建管道套接字     利用管道在主线程和调用线程间传递信号，这里主要是超时的信号
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd);
-    // 如果函数成功，则返回0，创建好的套接字分别是m_pipefd[0]和m_pipefd[1]；
     assert(ret != -1);
     /* 设置管道写端为非阻塞 */
     // 设置管道写端为非阻塞，为什么写端要非阻塞？
@@ -207,61 +199,89 @@ void WebServer::eventListen()
 
     // 每隔TIMESLOT时间触发SIGALRM信号
     alarm(TIMESLOT);
-
     // 工具类,信号和描述符基础操作
     Utils::u_pipefd = m_pipefd;
     Utils::u_epollfd = m_epollfd;
 }
-////被 void WebServer::eventLoop()调用  处理新到的客户连接 ->  接着WebServer::dealclientdata() -> WebServer::timer(int connfd, struct sockaddr_in client_address)
-void WebServer::timer(int connfd, struct sockaddr_in client_address)
+
+// 运行，循环监听事件。
+void WebServer::eventLoop()
 {
-    /* 并将connfd注册到内核事件表中 */
-    users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode, m_close_log, m_user, m_passWord, m_databaseName);
-
-    // 初始化client_data数据
-    // 初始化该连接对应的连接资源
-    // 创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
-    users_timer[connfd].address = client_address;
-    users_timer[connfd].sockfd = connfd;
-    // 创建定时器临时变量
-    util_timer *timer = new util_timer;
-    // 设置定时器对应的连接资源
-    timer->user_data = &users_timer[connfd];
-    // 设置回调函数
-    timer->cb_func = cb_func;
-
-    time_t cur = time(NULL);
-    // 设置绝对超时时间
-    timer->expire = cur + 3 * TIMESLOT;
-    // 创建该连接对应的定时器，初始化为前述临时变量
-    users_timer[connfd].timer = timer;
-    // 将该定时器添加到链表中
-    utils.m_timer_lst.add_timer(timer);
-}
-
-// 若有数据传输，则将定时器往后延迟3个单位
-// 并对新的定时器在链表上的位置进行调整
-void WebServer::adjust_timer(util_timer *timer)
-{
-
-    time_t cur = time(NULL);
-    timer->expire = cur + 3 * TIMESLOT;
-    utils.m_timer_lst.adjust_timer(timer);
-
-    LOG_INFO("%s", "adjust timer once");
-}
-
-void WebServer::deal_timer(util_timer *timer, int sockfd)
-{
-    // 服务器端关闭连接，移除对应的定时器
-    timer->cb_func(&users_timer[sockfd]);
-
-    if (timer)
+    // 超时标志
+    // 超时默认为False
+    bool timeout = false;
+    // 循环条件
+    bool stop_server = false;
+    while (!stop_server)
     {
-        utils.m_timer_lst.del_timer(timer);
-    }
+        /* 主线程调用epoll_wait等待一组文件描述符上的事件，并将当前所有就绪的epoll_event复制到events数组中 */
+        // 监听事件
+        // 监测发生事件的文件描述符
+        //-1，阻塞直到监听的一个fd上有一个感兴趣事件发生
+        int number = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1);
+        // 在epoll_wait时，因为设置了alarm定时触发警告，导致每次返回-1，errno为EINTR，对于这种错误返回
+        // 忽略这种错误，让epoll报错误号为4时，再次做一次epoll_wait ????
+        if (number < 0 && errno != EINTR)
+        {
+            LOG_ERROR("%s", "epoll failure");
+            break;
+        }
+        // 对所有就绪事件进行处理
+        // 轮询文件描述符
+        for (int i = 0; i < number; i++)
+        {
+            int sockfd = events[i].data.fd; // 事件表中就绪的socket文件描述符
 
-    LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
+            // 处理新到的客户连接
+            if (sockfd == m_listenfd) // 当listen到新的用户连接，listenfd上则产生就绪事件
+            {
+                bool flag = dealclientdata();
+                if (false == flag)
+                    continue;
+            }
+            // 如有异常，则直接关闭客户连接，并删除该用户的timer
+            else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
+            {
+                // 服务器端关闭连接，移除对应的定时器
+                // alarm函数会定期触发SIGALRM信号，这个信号交由sig_handler来处理，每当监测到有这个信号的时候，都会将这个信号写到pipefd[1]里面，传递给主循环：
+                util_timer *timer = users_timer[sockfd].timer;
+                deal_timer(timer, sockfd);
+            }
+            // 处理定时器信号
+            // 处理信号
+            // 管道读端对应文件描述符发生读事件
+            else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN))
+            {
+                // 接收到SIGALRM信号，timeout设置为True
+                bool flag = dealwithsignal(timeout, stop_server);
+                if (false == flag)
+                    LOG_ERROR("%s", "dealclientdata failure");
+            }
+            // 处理客户连接上接收到的数据
+            /* 当这一sockfd上有可读事件时，epoll_wait通知主线程。*/
+            // 通过epoll_wait发现这个connfd上有可读事件了（EPOLLIN），主线程就将这个HTTP的请求报文读进这个连接socket的读缓存中users[sockfd].read()，然后将该任务对象（指针）插入线程池的请求队列中pool->append(users + sockfd);
+            else if (events[i].events & EPOLLIN)
+            {
+                dealwithread(sockfd);
+            }
+            /* 当这一sockfd上有可写事件时，epoll_wait通知主线程。主线程往socket上写入服务器处理客户请求的结果 */
+            else if (events[i].events & EPOLLOUT)
+            {
+                dealwithwrite(sockfd);
+            }
+        }
+        // 当我们在读端pipefd[0]读到这个信号的的时候，就会将timeout变量置为true并跳出循环，让timer_handler()函数取出来定时器容器上的到期任务，该定时器容器是通过升序链表来实现的，从头到尾对检查任务是否超时，若超时则调用定时器的回调函数cb_func()，关闭该socket连接，并删除其对应的定时器del_timer。
+        // 处理定时器为非必须事件，收到信号并不是立马处理
+        // 完成读写事件后，再进行处理
+        if (timeout)
+        {
+            utils.timer_handler();
+
+            LOG_INFO("%s", "timer tick");
+
+            timeout = false;
+        }
+    }
 }
 
 // void WebServer::eventLoop()调用  处理新到的客户连接
@@ -313,16 +333,56 @@ bool WebServer::dealclientdata()
             // /* 并将connfd注册到内核事件表中 */
             timer(connfd, client_address);
         }
-        return false;
+        return false; ///???????????????????
     }
     return true;
+}
+
+////被 void WebServer::eventLoop()调用  处理新到的客户连接 ->  接着WebServer::dealclientdata() -> WebServer::timer(int connfd, struct sockaddr_in client_address)
+void WebServer::timer(int connfd, struct sockaddr_in client_address)
+{
+    /* 并将connfd注册到内核事件表中 */
+    users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode, m_close_log, m_user, m_passWord, m_databaseName);
+
+    // 初始化client_data数据
+    // 初始化该连接对应的连接资源
+    // 创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
+    users_timer[connfd].address = client_address;
+    users_timer[connfd].sockfd = connfd;
+    // 创建定时器临时变量
+    util_timer *timer = new util_timer;
+    // 设置定时器对应的连接资源
+    timer->user_data = &users_timer[connfd];
+    // 设置回调函数
+    timer->cb_func = cb_func;
+
+    time_t cur = time(NULL);
+    // 设置绝对超时时间
+    timer->expire = cur + 3 * TIMESLOT;
+    // 创建该连接对应的定时器，初始化为前述临时变量
+    users_timer[connfd].timer = timer;
+    // 将该定时器添加到链表中
+    utils.m_timer_lst.add_timer(timer);
+}
+
+void WebServer::deal_timer(util_timer *timer, int sockfd)
+{
+    // 服务器端关闭连接，移除对应的定时器
+    timer->cb_func(&users_timer[sockfd]);
+
+    if (timer)
+    {
+        utils.m_timer_lst.del_timer(timer);
+    }
+
+    LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
 }
 
 // 当我们在读端pipefd[0]读到这个信号的的时候，就会将timeout变量置为true并跳出循环，让timer_handler()函数取出来定时器容器上的到期任务，该定时器容器是通过升序链表来实现的，从头到尾对检查任务是否超时，若超时则调用定时器的回调函数cb_func()，关闭该socket连接，并删除其对应的定时器del_timer
 bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
 {
     int ret = 0;
-    int sig;
+    int sig; //????????????????????
     char signals[1024];
     // 从管道读端读出信号值，成功返回字节数，失败返回-1
     // 正常情况下，这里的ret返回值总是1，只有14和15两个ASCII码对应的字符
@@ -421,6 +481,15 @@ void WebServer::dealwithread(int sockfd)
         }
     }
 }
+void WebServer::adjust_timer(util_timer *timer)
+{
+
+    time_t cur = time(NULL);
+    timer->expire = cur + 3 * TIMESLOT;
+    utils.m_timer_lst.adjust_timer(timer);
+
+    LOG_INFO("%s", "adjust timer once");
+}
 
 void WebServer::dealwithwrite(int sockfd)
 {
@@ -469,83 +538,14 @@ void WebServer::dealwithwrite(int sockfd)
         }
     }
 }
-
-// 运行，循环监听事件。
-void WebServer::eventLoop()
+void WebServer::log_write()
 {
-    // 超时标志
-    // 超时默认为False
-    bool timeout = false;
-    // 循环条件
-    bool stop_server = false;
-
-    while (!stop_server)
+    if (0 == m_close_log)
     {
-        /* 主线程调用epoll_wait等待一组文件描述符上的事件，并将当前所有就绪的epoll_event复制到events数组中 */
-        // 监听事件
-        // 监测发生事件的文件描述符
-        int number = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1);
-
-        if (number < 0 && errno != EINTR)
-        {
-            LOG_ERROR("%s", "epoll failure");
-            break;
-        }
-        // 对所有就绪事件进行处理
-        // 轮询文件描述符
-        for (int i = 0; i < number; i++)
-        {
-            int sockfd = events[i].data.fd; // 事件表中就绪的socket文件描述符
-
-            // 处理新到的客户连接
-            if (sockfd == m_listenfd) // 当listen到新的用户连接，listenfd上则产生就绪事件
-            {
-                bool flag = dealclientdata();
-                if (false == flag)
-                    continue;
-            }
-            // 如有异常，则直接关闭客户连接，并删除该用户的timer
-            else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
-            {
-                // 服务器端关闭客户端连接，移除对应的定时器
-                // alarm函数会定期触发SIGALRM信号，这个信号交由sig_handler来处理，每当监测到有这个信号的时候，都会将这个信号写到pipefd[1]里面，传递给主循环：
-                util_timer *timer = users_timer[sockfd].timer;
-                deal_timer(timer, sockfd);
-            }
-            // 处理定时器信号
-            // 处理信号
-            // 管道读端对应文件描述符发生读事件
-            else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN))
-            {
-                // 接收到SIGALRM信号，timeout设置为True
-                bool flag = dealwithsignal(timeout, stop_server);
-                if (false == flag)
-                    LOG_ERROR("%s", "dealclientdata failure");
-            }
-            // 处理客户连接上接收到的数据
-            /* 当这一sockfd上有可读事件时，epoll_wait通知主线程。*/
-            // 通过epoll_wait发现这个connfd上有可读事件了（EPOLLIN），主线程就将这个HTTP的请求报文读进这个连接socket的读缓存中users[sockfd].read()，然后将该任务对象（指针）插入线程池的请求队列中pool->append(users + sockfd);
-            else if (events[i].events & EPOLLIN)
-            {
-                dealwithread(sockfd);
-            }
-            /* 当这一sockfd上有可写事件时，epoll_wait通知主线程。主线程往socket上写入服务器处理客户请求的结果 */
-            else if (events[i].events & EPOLLOUT)
-            {
-                dealwithwrite(sockfd);
-            }
-        }
-        // 当我们在读端pipefd[0]读到这个信号的的时候，就会将timeout变量置为true并跳出循环，让timer_handler()函数取出来定时器容器上的到期任务，该定时器容器是通过升序链表来实现的，从头到尾对检查任务是否超时，若超时则调用定时器的回调函数cb_func()，关闭该socket连接，并删除其对应的定时器del_timer。
-
-        // 处理定时器为非必须事件，收到信号并不是立马处理
-        // 完成读写事件后，再进行处理
-        if (timeout)
-        {
-            utils.timer_handler();
-
-            LOG_INFO("%s", "timer tick");
-
-            timeout = false;
-        }
+        // 初始化日志  同步、异步
+        if (1 == m_log_write)
+            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
+        else
+            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
     }
 }
